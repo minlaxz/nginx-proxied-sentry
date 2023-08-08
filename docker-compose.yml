@@ -378,11 +378,29 @@ services:
         BASE_IMAGE: sentry-self-hosted-local
     entrypoint: "/entrypoint.sh"
     command: '"0 0 * * * gosu sentry sentry cleanup --days $SENTRY_EVENT_RETENTION_DAYS"'
+#  nginx:
+#    <<: *restart_policy
+#    ports:
+#      - "$SENTRY_BIND:80/tcp"
+#    image: "nginx:1.25.1-alpine"
+#    volumes:
+#      - type: bind
+#        read_only: true
+#        source: ./nginx
+#        target: /etc/nginx
+#      - sentry-nginx-cache:/var/cache/nginx
+#    depends_on:
+#      - web
+#      - relay
   nginx:
     <<: *restart_policy
-    ports:
-      - "$SENTRY_BIND:80/tcp"
-    image: "nginx:1.25.1-alpine"
+    expose:
+      - "$SENTRY_BIND"
+    image: "nginx:1.22.0-alpine"
+    environment:
+      - VIRTUAL_HOST=sentry.YOURDOMAIN.com
+      - VIRTUAL_POST=9000
+      - LETSENCRYPT_HOST=sentry.YOUDOMAIN.com
     volumes:
       - type: bind
         read_only: true
@@ -469,3 +487,9 @@ volumes:
   sentry-kafka-log:
   sentry-smtp-log:
   sentry-clickhouse-log:
+
+networks:
+  default:
+    name: nginx-proxy
+    external: true
+
